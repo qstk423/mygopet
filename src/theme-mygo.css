@@ -1,0 +1,277 @@
+/* 迷途之子 — an original, rain-washed visual world for the MyGO companion stage. */
+:root {
+  color-scheme: dark;
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  color: #eaf1fa;
+  background: #0a1322;
+  --ink: #eaf1fa;
+  --muted: #a8b8cc;
+  --rose: #91bfe2;
+  --paper: #18283f;
+  --line: #3b536c;
+  --serif: 'Noto Sans SC', 'PingFang SC', sans-serif;
+}
+body { background: #0a1322; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline-color: #a6d8f5; }
+::selection { color: #091729; background: #b2d8ef; }
+
+.app-shell {
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  min-height: 720px;
+  grid-template-columns: 252px minmax(0, 1fr);
+  background: #111d31;
+  box-shadow: none;
+}
+.sidebar {
+  padding: 30px 19px 21px;
+  background: linear-gradient(180deg, #101b2e 0%, #0c1728 100%);
+  border-right: 1px solid #49617b66;
+}
+.sidebar::before { content: none; }
+.brand {
+  gap: 12px;
+  padding: 0 3px 35px;
+  color: #f5f8ff;
+}
+.brand-mark {
+  width: 43px;
+  height: 43px;
+  border: 1px solid #709fc266;
+  border-radius: 10px;
+  background: #1c344e;
+  color: #a9d9f5;
+}
+.brand-mark svg { width: 27px; height: 27px; }
+.brand strong { font: 600 25px/1.2 'Noto Sans SC', sans-serif; letter-spacing: 1px; color: #f0f5fe; }
+.roster-heading {
+  margin: 8px 4px 16px;
+  color: #b8cbe0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.roster-heading span:last-child { color: #8aa9c9; font-size: 12px; }
+.roster-list { gap: 7px; }
+.roster-person {
+  min-height: 53px;
+  gap: 11px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: #c9d7e9;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.roster-person:hover { background: #233b57; }
+.roster-person.selected {
+  background: #213953;
+  border-color: #7ba9c866;
+  box-shadow: inset 3px 0 #a1c9e5;
+  color: #fff;
+}
+.roster-person.disabled { opacity: .48; }
+.roster-avatar {
+  width: 35px;
+  height: 35px;
+  background: color-mix(in srgb, var(--person-color) 32%, #172842);
+  color: #f4f8ff;
+  font-size: 14px;
+}
+.roster-copy strong { font-size: 13px; font-weight: 500; }
+.roster-check { border-color: #7187a055; color: #a6b9cb; }
+.selected .roster-check { background: #8cb8d8; border-color: #8cb8d8; color: #13213a; }
+.sidebar-note {
+  margin: auto 4px 24px;
+  padding: 0 0 0 15px;
+  border: 0;
+  border-left: 1px solid #79a8c9;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #a8c0d7;
+  transform: none;
+}
+.sidebar-note p { margin: 0; font: 14px/1.9 'Noto Sans SC', sans-serif; }
+.profile-button { gap: 11px; border-top-color: #51698169; color: #d7e4f3; }
+.profile-avatar { background: #294663; color: #d8effe; font-size: 12px; }
+.profile-button strong { font-size: 13px; font-weight: 500; }
+
+.story-screen {
+  min-width: 0;
+  padding: 18px 24px 22px;
+  background: linear-gradient(160deg, #192840, #101b30 72%);
+}
+.story-header { height: 68px; border: 0; }
+.story-header h1 { color: #f1f5fb; font: 600 26px/1.3 'Noto Sans SC', sans-serif; letter-spacing: .8px; }
+.scene-chip {
+  padding: 8px 13px;
+  border-color: #66829d70;
+  border-radius: 7px;
+  background: #273b54;
+  color: #d2e3f1;
+  font-size: 12px;
+}
+.scene-chip i { background: #a8d7e9; box-shadow: 0 0 8px #8bc4e5; }
+.stage-scene {
+  min-height: 480px;
+  margin: 0 0 14px;
+  border: 1px solid #799ab77a;
+  border-radius: 12px;
+  background: #1a2f4c url('/scene-overpass-night.jpg') center 52% / cover no-repeat;
+  box-shadow: 0 15px 36px #040d1d4d;
+}
+.stage-scene::before {
+  z-index: 1;
+  background: linear-gradient(180deg, #11203a08 10%, #101d3350 68%, #071322bd 100%);
+}
+.scene-haze {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(90deg, #0b1a33a1, transparent 23% 77%, #0b1a33a1);
+  pointer-events: none;
+}
+.stage-floor { display: none; }
+.stage-characters {
+  z-index: 2;
+  inset: 46px 8% 17%;
+  gap: clamp(32px, 8vw, 110px);
+}
+.character-stage { width: min(41%, 274px); height: 100%; flex: 0 1 274px; }
+.character-live2d { inset: -7px 0 12px; }
+.character-glow { bottom: 16px; height: 65%; opacity: .4; }
+.empty-stage-slot { border-color: #b4d1e37a; background: #142944a8; color: #e2f0fb; }
+.empty-stage-slot span { background: #294b68; color: #e2f3ff; }
+.empty-stage-slot small { font-size: 12px; }
+
+.wardrobe-picker { z-index: 12; top: 16px; right: 17px; gap: 9px; }
+.wardrobe-picker label { gap: 4px; color: #ebf4ff; font-size: 11px; text-shadow: 0 1px 5px #071324; }
+.wardrobe-trigger {
+  min-width: 130px;
+  height: 32px;
+  border-color: #9bbcd47a;
+  border-radius: 7px;
+  background: #172c46d9;
+  color: #f3f7fe;
+  font-size: 11px;
+}
+.wardrobe-trigger:hover { background: #274867; }
+.wardrobe-trigger i { color: #b3d8f2; }
+.wardrobe-popover {
+  z-index: 20;
+  border-color: #7797b0;
+  border-radius: 11px;
+  background: #172940f5;
+  box-shadow: 0 18px 48px #020918a8;
+}
+.wardrobe-popover-heading { border-bottom-color: #526b84; }
+.wardrobe-popover-heading strong { color: #edf5ff; font-size: 15px; }
+.wardrobe-popover-heading button { border-color: #7b96ad; background: #2b435e; color: #eef7ff; }
+.wardrobe-grid { scrollbar-color: #7797b3 transparent; }
+.wardrobe-option {
+  border-color: #5d7690;
+  border-radius: 8px;
+  background: #233a56;
+  color: #ebf2fc;
+  font-size: 11px;
+}
+.wardrobe-option:hover { border-color: #aed7f1; box-shadow: 0 5px 14px #071323a8; }
+.wardrobe-option.selected { border-color: #a4d7f5; background: #355a78; box-shadow: inset 0 0 0 1px #bde0f3; }
+.wardrobe-thumb { background: #334b65; }
+.wardrobe-thumb i, .wardrobe-thumb.missing-thumb i { color: #abcce5; }
+.wardrobe-option > b { background: #91c4e6; color: #12223b; }
+
+.dialogue-panel {
+  z-index: 9;
+  left: 28px;
+  right: 28px;
+  bottom: 22px;
+  min-height: 162px;
+  padding: 37px 30px 25px;
+  border: 1px solid #a8bfd2b0;
+  border-radius: 11px;
+  background: linear-gradient(125deg, #101d32f5, #1c2b48ed);
+  box-shadow: 0 13px 32px #020b1a8c;
+  backdrop-filter: blur(8px);
+}
+.dialogue-panel::before { display: none; }
+.dialogue-panel.can-advance:hover { border-color: #d4ebfa; }
+.dialogue-speaker {
+  top: -20px;
+  left: 22px;
+  height: 38px;
+  min-width: 144px;
+  border: 1px solid #a8bfd2b0;
+  border-radius: 7px;
+  background: #1d304b;
+  box-shadow: 0 5px 15px #020b1a80;
+  color: #f7fbff;
+}
+.dialogue-speaker .speaker-mark { background: color-mix(in srgb, var(--person-color) 42%, #1c344e); color: #fff; }
+.dialogue-speaker strong { color: #f7fbff; font-size: 14px; }
+.dialogue-content p { max-width: 74ch; color: #f0f5fc; font-size: 17px; line-height: 1.8; }
+.dialogue-panel .advance-button { color: #bce5f7; }
+.dialogue-panel .advance-button:hover { background: #40627d; color: #fff; }
+.composer-dock {
+  height: 54px;
+  margin: 0;
+  padding: 5px 6px 5px 17px;
+  border-color: #6787a46e;
+  border-radius: 9px;
+  background: #1e324d;
+  box-shadow: 0 6px 20px #020b1a55;
+}
+.composer-dock input { color: #f4f8ff; font: 14px 'Noto Sans SC', sans-serif; }
+.composer-dock input::placeholder { color: #a9bdd2; }
+.voice-button { width: 35px; height: 35px; border-radius: 7px; background: #324f6b; color: #d7edff; }
+.voice-button.playing { background: #568ab3; color: #fff; }
+.send-button { height: 38px; padding: 0 18px; border-radius: 7px; background: #a5d2ed; color: #14243d; font-size: 13px; font-weight: 600; }
+.send-button:hover:not(:disabled) { background: #c4e7f8; }
+.model-status { border-color: #7b9db6; background: #172943d9; color: #e7f2fc; font-size: 12px; }
+.model-status--notice strong, .model-status--notice small { color: #e1eff9; }
+
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 216px minmax(0, 1fr); }
+  .sidebar { padding-inline: 13px; }
+  .story-screen { padding-inline: 16px; }
+  .stage-characters { inset-inline: 5%; gap: 5vw; }
+  .character-stage { width: 45%; flex-basis: 45%; }
+}
+@media (max-width: 620px) {
+  .app-shell { display: flex; min-height: 100vh; height: auto; }
+  .sidebar { min-height: 0; padding: 12px 12px 10px; border-right: 0; border-bottom: 1px solid #59718b; }
+  .brand { padding-bottom: 9px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .brand-mark svg { width: 23px; height: 23px; }
+  .brand strong { font-size: 20px; }
+  .roster-heading { margin: 3px 2px 7px; font-size: 12px; }
+  .roster-list { display: flex; gap: 5px; overflow-x: auto; }
+  .roster-person { width: auto; min-height: 39px; flex: 0 0 auto; padding: 5px 7px; }
+  .roster-avatar { width: 28px; height: 28px; }
+  .roster-copy strong { font-size: 11px; }
+  .sidebar-note, .profile-button { display: none; }
+  .story-screen { min-height: 720px; padding: 12px; }
+  .story-header { height: 50px; }
+  .story-header h1 { font-size: 20px; }
+  .scene-chip { display: flex; font-size: 10px; padding: 6px 8px; }
+  .stage-scene { min-height: 465px; background-position: center; }
+  .wardrobe-picker { top: 11px; left: 9px; right: 9px; justify-content: center; }
+  .wardrobe-picker label { max-width: 48%; font-size: 9px; }
+  .wardrobe-trigger { min-width: 0; height: 28px; font-size: 9px; }
+  .wardrobe-popover { top: 87px; max-height: calc(100% - 110px); }
+  .wardrobe-option { font-size: 9px; }
+  .stage-characters { inset: 75px 3% 24%; gap: 4vw; }
+  .character-stage { width: 47%; height: 100%; flex-basis: 47%; }
+  .character-live2d { inset: -4px 0 10px; }
+  .dialogue-panel { left: 9px; right: 9px; bottom: 10px; min-height: 153px; padding: 27px 14px 18px; }
+  .dialogue-speaker { left: 11px; height: 34px; min-width: 116px; }
+  .dialogue-speaker strong { font-size: 12px; }
+  .dialogue-content p { font-size: 13px; line-height: 1.75; }
+  .composer-dock { height: 46px; padding-left: 11px; }
+  .composer-dock input { font-size: 11px; }
+  .send-button { height: 32px; padding-inline: 10px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .roster-person, .wardrobe-option, .dialogue-panel, .advance-button { transition-duration: .01ms; }
+}

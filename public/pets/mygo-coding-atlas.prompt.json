@@ -1,0 +1,7 @@
+{
+  "source": "Built-in imagegen, generated as a new project asset from the approved mygo-pixel-atlas.png identity reference",
+  "useCase": "stylized-concept",
+  "assetType": "transparent pixel-art coding-companion sprite sheet",
+  "grid": "2 columns x 5 rows, rows Anon, Tomori, Rana, Soyo, Taki",
+  "prompt": "Create a separate transparent pixel-art action sheet, exactly two columns and five rows, preserving the approved MyGO chibi identities and school uniforms. Each row shows one quiet seated coding-companion pose in two subtly different frames with aligned size and baseline: Anon with compact guitar and gray eyes; Tomori with notebook and brown eyes; Rana with compact guitar and amber/blue eyes; Soyo with bass and blue eyes in the white navy Tsukinomori dress; Taki with sticks and small lap practice pad and violet eyes. Keep the five reference hairstyles, iris colors, outfits and proportions. No background, grid, text, watermark, or large props. Transparent cutouts, crisp pixel-art outlines."
+}

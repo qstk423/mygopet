@@ -1,0 +1,29 @@
+{
+  "name": "flower-companion-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "desktop": "node scripts/desktop-dev.mjs",
+    "test:pet": "node scripts/test-pet.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "pixi-live2d-display": "0.4.0",
+    "pixi.js": "6.5.10",
+    "vue": "3.5.43"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@vitejs/plugin-vue": "6.0.9",
+    "electron": "44.7.0",
+    "typescript": "~5.9.3",
+    "vite": "8.3.3",
+    "vue-tsc": "3.1.5"
+  },
+  "overrides": {
+    "gh-pages": "6.3.0"
+  }
+}
