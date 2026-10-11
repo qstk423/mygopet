@@ -5,10 +5,13 @@ import { createRequire } from 'node:module'
 const { classifyFocus } = createRequire(import.meta.url)('../desktop/focus.cjs')
 const source = ts.transpileModule(readFileSync('src/pet/petState.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
 const p = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
+const motionSource = ts.transpileModule(readFileSync('src/pet/petMotion.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
+const m = await import(`data:text/javascript;base64,${Buffer.from(motionSource).toString('base64')}`)
 let passed = 0
 function test(name, run) { run(); passed++; console.log(`通过：${name}`) }
 test('损坏存档安全恢复', () => assert.equal(p.parsePetSave('{').selected, 'anon'))
 test('异常数值被限制', () => { const s = p.createPetSave(); s.stars = -100; s.settings.scale = 99; const r = p.parsePetSave(JSON.stringify(s)); assert.equal(r.stars, 0); assert.equal(r.settings.scale, 1.6) })
+test('旧存档与未知步速回退自然档', () => { const s = p.createPetSave(); delete s.settings.pace; assert.equal(p.parsePetSave(JSON.stringify(s)).settings.pace, 'normal'); s.settings.pace = 'warp'; assert.equal(p.parsePetSave(JSON.stringify(s)).settings.pace, 'normal') })
 test('喜欢的食物消费一份并增加八点亲密度', () => { const s = p.createPetSave(); assert.equal(p.feedPet(s, 'biscuit').xp, 8); assert.equal(s.inventory.biscuit, 2); assert.equal(s.friends.anon.xp, 8) })
 test('无库存不可投喂', () => { const s = p.createPetSave(); s.inventory.rice = 0; assert.equal(p.feedPet(s, 'rice').ok, false); assert.equal(s.daily.feeds, 0) })
 test('饱腹不扣库存', () => { const s = p.createPetSave(); s.friends.anon.fullness = 100; assert.equal(p.feedPet(s, 'biscuit').ok, false); assert.equal(s.inventory.biscuit, 3) })
@@ -32,4 +35,8 @@ test('普通浏览器不自动当学习', () => assert.equal(classifyFocus({bund
 test('显式学习模式允许无操作看视频', () => assert.equal(classifyFocus({bundle:'com.apple.Safari',study:true,idleSeconds:600}).mode, 'study'))
 test('学习模式切换到其他应用暂停', () => assert.equal(classifyFocus({bundle:'com.apple.finder',study:true}).active, false))
 test('锁屏、休眠、识别失败和用户暂停均不计时', () => { for (const override of [{locked:true},{suspended:true},{error:true},{enabled:false}]) assert.equal(classifyFocus({bundle:'com.microsoft.VSCode', ...override}).active, false) })
+test('散步先停留，出发距离有限且贴近原位', () => { const state = m.createRoamState(0, { x: 200, y: 200 }, () => 0); const bounds = { minX: 8, maxX: 900, minY: 140, maxY: 700 }; assert.equal(m.advanceRoam(state, { x: 200, y: 200 }, bounds, 'normal', 2000, .05, () => 0).moving, false); const step = m.advanceRoam(state, { x: 200, y: 200 }, bounds, 'normal', 3500, .05, () => 0); assert.equal(step.moving, true); assert.ok(Math.abs(state.target.x - 200) <= 177); assert.ok(Math.abs(state.target.y - 200) <= 14) })
+test('靠近屏幕边缘时反向，不会卡着边界踏步', () => { const state = m.createRoamState(0, { x: 198, y: 200 }, () => 0); const bounds = { minX: 8, maxX: 200, minY: 140, maxY: 700 }; const result = m.advanceRoam(state, { x: 198, y: 200 }, bounds, 'normal', 3500, .05, () => .7); assert.equal(result.facing, -1); assert.ok(state.target.x < 198) })
+test('活泼档比悠闲档走得快，步伐帧跟随实际位移', () => { const bounds = { minX: 8, maxX: 500, minY: 140, maxY: 700 }; const slow = { phase: 'walk', target: { x: 300, y: 200 }, traveled: 40, nextAt: 0 }; const fast = structuredClone(slow); const a = m.advanceRoam(slow, { x: 100, y: 200 }, bounds, 'calm', 1000, .3); const b = m.advanceRoam(fast, { x: 100, y: 200 }, bounds, 'lively', 1000, .3); assert.ok(b.position.x > a.position.x); assert.equal(a.frame, Math.floor(slow.traveled / 9) % 2); assert.equal(b.frame, Math.floor(fast.traveled / 9) % 2) })
+test('到达后真正休息，暂停后也不会立即重启散步', () => { const state = { phase: 'walk', target: { x: 110, y: 200 }, traveled: 50, nextAt: 0 }; const bounds = { minX: 8, maxX: 500, minY: 140, maxY: 700 }; const result = m.advanceRoam(state, { x: 100, y: 200 }, bounds, 'normal', 1000, 1, () => 0); assert.equal(state.phase, 'rest'); assert.ok(result.walkSeconds > 0); assert.equal(m.advanceRoam(state, result.position, bounds, 'normal', 1100, .05).moving, false); m.pauseRoam(state, result.position, 2000); assert.equal(m.advanceRoam(state, result.position, bounds, 'normal', 3000, .05).moving, false) })
 console.log(`${passed} 项全部通过`)

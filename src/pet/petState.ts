@@ -1,6 +1,7 @@
 export const PET_IDS = ['anon', 'tomori', 'rana', 'soyo', 'taki'] as const
 export type PetId = typeof PET_IDS[number]
 export type FoodId = 'biscuit' | 'matcha' | 'rice'
+export type PetPace = 'calm' | 'normal' | 'lively'
 export type PetAction = 'idle' | 'walking' | 'working' | 'happy' | 'eating' | 'sleeping' | 'dragging' | 'landing'
 
 export const pets = [
@@ -23,7 +24,7 @@ export type PetSave = {
   inventory: Record<FoodId, number>
   friends: Record<PetId, PetStats>
   daily: { day: string; pats: number; feeds: number; walkSeconds: number; claimed: string[] }
-  settings: { roaming: boolean; scale: number; position: { x: number; y: number } | null }
+  settings: { roaming: boolean; pace: PetPace; scale: number; position: { x: number; y: number } | null }
   focus: { enabled: boolean; seconds: number; granted: number; sourceSeconds: number | null }
 }
 export const STORAGE_KEY = 'mitu-pixel-pet-v1'
@@ -37,7 +38,7 @@ export function createPetSave(now = Date.now()): PetSave {
     inventory: { biscuit: 3, matcha: 2, rice: 2 },
     friends: Object.fromEntries(PET_IDS.map(id => [id, { xp: 0, fullness: 65, happiness: 75, lastUpdated: now }])) as Record<PetId, PetStats>,
     daily: { day: localDay(now), pats: 0, feeds: 0, walkSeconds: 0, claimed: [] },
-    settings: { roaming: true, scale: 1, position: null },
+    settings: { roaming: true, pace: 'normal', scale: 1, position: null },
     focus: { enabled: true, seconds: 0, granted: 0, sourceSeconds: null },
   }
 }
@@ -72,6 +73,7 @@ export function parsePetSave(raw: string | null, now = Date.now()): PetSave {
       }
     }
     result.settings.roaming = typeof data.settings?.roaming === 'boolean' ? data.settings.roaming : true
+    result.settings.pace = (['calm', 'normal', 'lively'] as const).includes(data.settings?.pace) ? data.settings.pace : 'normal'
     result.settings.scale = finite(data.settings?.scale, 1, 0.7, 1.6)
     const pos = data.settings?.position
     if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) result.settings.position = { x: pos.x, y: pos.y }

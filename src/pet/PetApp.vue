@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import PetSprite from './PetSprite.vue'
 import PetIcon from './PetIcon.vue'
 import { affinity, buyFood, claimReward, clamp, creditFocusSource, dailyTasks, feedPet, focusProgress, foods, parsePetSave, patPet, pets, refreshPetSave, STORAGE_KEY, type FoodId, type PetAction, type PetId } from './petState'
+import { advanceRoam, createRoamState, pauseRoam } from './petMotion'
 import './desktopBridge'
 
 const native = new URLSearchParams(location.search).get('mode') === 'pet' && !!window.desktopPet
@@ -24,7 +25,7 @@ const facing = ref(1)
 const dragTilt = ref(0)
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
 const reducedMotion = ref(motionPreference.matches)
-function motionChanged(event: MediaQueryListEvent) { reducedMotion.value = event.matches; moving.value = false; target = { ...pos } }
+function motionChanged(event: MediaQueryListEvent) { reducedMotion.value = event.matches; moving.value = false; pauseRoam(roam, pos, Date.now()) }
 const speech = ref(pet.value.hello)
 const notice = ref('')
 const storageError = ref(false)
@@ -39,8 +40,9 @@ const focusLabel = computed(() => ({ coding: '编程中', study: '学习中', wa
 const viewport = reactive({ w: innerWidth, h: innerHeight })
 const size = computed(() => 144 * save.settings.scale)
 const pos = reactive({ x: 0, y: 0 })
-let target = { x: 0, y: 0 }
-let nextWalk = 0, lastTick = 0, lastPat = 0, speechUntil = Date.now() + 5000, effectUntil = 0
+let roam = createRoamState(Date.now(), pos)
+let wasRoaming = false, lastRegionUpdate = 0
+let lastTick = 0, lastPat = 0, speechUntil = Date.now() + 5000, effectUntil = 0
 let pointer: { id: number; x: number; y: number; startX: number; startY: number; moved: boolean } | null = null
 let dragLastX = 0, dragLastTime = 0
 let timer: ReturnType<typeof setInterval> | undefined
@@ -148,9 +150,9 @@ function endDrag(event: PointerEvent) {
   const click = !pointer.moved && event.type !== 'pointercancel'
   const dropped = pointer.moved
   pointer = null; dragging.value = false; window.desktopPet?.setDragging(false)
-  target = { ...pos }; moving.value = false; dragTilt.value = 0
+  pauseRoam(roam, pos, Date.now()); moving.value = false; dragTilt.value = 0
   if (dropped && !sleeping.value) { effect.value = 'landing'; effectUntil = Date.now() + 420 }
-  nextWalk = Date.now() + 3000; persist(); if (click) pat()
+  persist(); if (click) pat()
 }
 function openMain() {
   if (window.desktopPet) void window.desktopPet.openMain()
@@ -164,10 +166,11 @@ function updateRegions() {
   })
   window.desktopPet?.setHitRegions(regions)
 }
+watch([panel, size, stacked], async () => { await nextTick(); updateRegions() })
 onMounted(async () => {
   document.body.classList.toggle('native-pet', native)
   const initial = save.settings.position ?? { x: native ? viewport.w - 210 : Math.max(40, viewport.w / 2 - 240), y: native ? viewport.h - 240 : viewport.h / 2 - 30 }
-  Object.assign(pos, initial); constrain(); await nextTick(); updateRegions()
+  Object.assign(pos, initial); constrain(); roam = createRoamState(Date.now(), pos); await nextTick(); updateRegions()
   await focusPreferences()
   focusTimer = setInterval(() => void pollFocus(), 2000)
   timer = setInterval(() => {
@@ -177,21 +180,22 @@ onMounted(async () => {
     const canWalk = !reducedMotion.value && !document.hidden && save.settings.roaming && !panel.value && !pointer && !sleeping.value && !codingCompanion.value && effect.value === 'idle'
     moving.value = false
     if (canWalk) {
-      if (now > nextWalk) {
-        const ceiling = native ? 52 : 140
-        target = { x: 12 + Math.random() * Math.max(0, viewport.w - size.value - 24), y: clamp(pos.y + (Math.random() - .5) * 160, ceiling, Math.max(ceiling, viewport.h - size.value - 44)) }
-        nextWalk = now + 5000 + Math.random() * 4000
-      }
-      const dx = target.x - pos.x, dy = target.y - pos.y, distance = Math.hypot(dx, dy)
-      if (distance > 2) { moving.value = true; const step = Math.min(distance, 44 * dt); pos.x += dx / distance * step; pos.y += dy / distance * step; if (Math.abs(dx) > 2) facing.value = dx < 0 ? -1 : 1; save.daily.walkSeconds += dt }
-      else moving.value = false
-      frame.value = Math.floor(now / 190) % 2
+      const ceiling = native ? 52 : 140
+      const result = advanceRoam(roam, pos, { minX: 8, maxX: Math.max(8, viewport.w - size.value - 8), minY: ceiling, maxY: Math.max(ceiling, viewport.h - size.value - 44) }, save.settings.pace, now, dt)
+      pos.x = result.position.x; pos.y = result.position.y
+      moving.value = result.moving
+      if (result.facing) facing.value = result.facing
+      save.daily.walkSeconds += result.walkSeconds
+      frame.value = result.frame
+    } else if (wasRoaming) {
+      pauseRoam(roam, pos, now)
     }
+    wasRoaming = canWalk
     if (reducedMotion.value) frame.value = 0
     else if (codingCompanion.value) frame.value = Math.floor(now / 1400) % 2
     else if (!moving.value) frame.value = Math.floor(now / 180) % 2
     dragTilt.value *= .82
-    updateRegions()
+    if (native && (now - lastRegionUpdate >= (moving.value || dragging.value ? 100 : 500))) { updateRegions(); lastRegionUpdate = now }
   }, 50)
   persistTimer = setInterval(persist, 1500)
   refreshTimer = setInterval(() => refreshPetSave(save), 60000)
@@ -228,7 +232,7 @@ onUnmounted(() => {
         <div v-else class="pet-rewards"><div v-for="task in tasks" :key="task.id" class="pet-reward-row"><div><strong>{{ task.name }}</strong><span>{{ task.current }}/{{ task.target }}</span></div><button :disabled="task.claimed || task.current < task.target" @click="reward(task.id)"><template v-if="task.claimed"><PetIcon name="check" />已领取</template><template v-else><PetIcon name="star" />{{ task.reward }}</template></button></div></div>
       </div>
       <p class="pet-notice" role="status">{{ storageError ? '保存失败，请检查浏览器存储权限。' : notice }}</p>
-      <footer class="pet-panel-foot"><button :aria-pressed="save.settings.roaming" @click="save.settings.roaming = !save.settings.roaming; persist()"><PetIcon :name="save.settings.roaming ? 'walk' : 'pause'" />{{ save.settings.roaming ? '自由散步' : '留在身边' }}</button><label>大小<select v-model.number="save.settings.scale" @change="constrain(); persist()"><option :value=".8">小</option><option :value="1">中</option><option :value="1.3">大</option></select></label><button class="pet-icon-button" aria-label="打开对话窗口" @click="openMain"><PetIcon name="home" /></button></footer>
+      <footer class="pet-panel-foot"><button :aria-pressed="save.settings.roaming" @click="save.settings.roaming = !save.settings.roaming; persist()"><PetIcon :name="save.settings.roaming ? 'walk' : 'pause'" />{{ save.settings.roaming ? '自由散步' : '留在身边' }}</button><label>步速<select v-model="save.settings.pace" @change="persist()"><option value="calm">悠闲</option><option value="normal">自然</option><option value="lively">活泼</option></select></label><label>大小<select v-model.number="save.settings.scale" @change="constrain(); persist()"><option :value=".8">小</option><option :value="1">中</option><option :value="1.3">大</option></select></label><button class="pet-icon-button" aria-label="打开对话窗口" @click="openMain"><PetIcon name="home" /></button></footer>
     </section>
   </main>
 </template>
